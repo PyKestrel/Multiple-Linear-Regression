@@ -69,5 +69,66 @@ regressor.fit(X_train, y_train)
 coef_ = regressor.coef_
 intercept_ = regressor.intercept_
 
-print("Coefficients: ", coef_)
-print("Intercept: ", intercept_)
+# Ensure X1, X2, and y_test have compatible shapes for 3D plotting
+X1 = X_test[:, 0] if X_test.ndim > 1 else X_test
+X2 = X_test[:, 1] if X_test.ndim > 1 else np.zeros_like(X1)
+
+# Create a mesh grid for plotting the regression plane
+x1_surf, x2_surf = np.meshgrid(
+    np.linspace(X1.min(), X1.max(), 100), np.linspace(X2.min(), X2.max(), 100)
+)
+
+y_surf = intercept_ + coef_[0, 0] * x1_surf + coef_[0, 1] * x2_surf
+
+# Predict y values using trained regression model to compare with actual y_test for above/below plane colors
+y_pred = (
+    regressor.predict(X_test.reshape(-1, 1))
+    if X_test.ndim == 1
+    else regressor.predict(X_test)
+)
+above_plane = y_test >= y_pred
+below_plane = y_test < y_pred
+above_plane = above_plane[:, 0]
+below_plane = below_plane[:, 0]
+
+# Plotting
+fig = plt.figure(figsize=(20, 8))
+ax = fig.add_subplot(111, projection="3d")
+
+# Plot the data points above and below the plane in different colors
+ax.scatter(
+    X1[above_plane],
+    X2[above_plane],
+    y_test[above_plane],
+    label="Above Plane",
+    s=70,
+    alpha=0.7,
+    ec="k",
+)
+ax.scatter(
+    X1[below_plane],
+    X2[below_plane],
+    y_test[below_plane],
+    label="Below Plane",
+    s=50,
+    alpha=0.3,
+    ec="k",
+)
+
+# Plot the regression plane
+ax.plot_surface(x1_surf, x2_surf, y_surf, color="k", alpha=0.21, label="plane")
+
+# Set view and labels
+ax.view_init(elev=10)
+
+ax.legend(fontsize="x-large", loc="upper center")
+ax.set_xticks([])
+ax.set_yticks([])
+ax.set_zticks([])
+ax.set_box_aspect(None, zoom=0.75)
+ax.set_xlabel("ENGINESIZE", fontsize="xx-large")
+ax.set_ylabel("FUELCONSUMPTION", fontsize="xx-large")
+ax.set_zlabel("CO2 Emissions", fontsize="xx-large")
+ax.set_title("Multiple Linear Regression of CO2 Emissions", fontsize="xx-large")
+plt.tight_layout()
+plt.show()
